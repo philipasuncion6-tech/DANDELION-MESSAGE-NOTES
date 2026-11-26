@@ -54,7 +54,7 @@ footer{text-align:center;margin-top:25px;font-size:13px;opacity:.9}
 <h3>💌 Create Your Message</h3>
 <label for="title">Message title</label><input id="title" maxlength="70" placeholder="A little wish for you..." value="A Wish from the Heart">
 <label for="msg">Your message</label><textarea id="msg" maxlength="1200" placeholder="Write your heartfelt message here...">May your days be filled with hope, your heart with happiness, and your dreams with beautiful beginnings. Like dandelion seeds carried by the breeze, may your wishes find their way to something wonderful. 🌼</textarea>
-<div class="controls"><div><label for="theme">Video background</label><select id="theme"><option value="sunset">Golden Dandelion Sky</option><option value="blue">Blue Dream</option><option value="rose">Soft Rose</option></select></div><div><label for="duration">MP4 duration</label><select id="duration"><option value="12" selected>12 seconds</option><option value="18">18 seconds</option><option value="24">24 seconds</option></select></div></div>
+<div class="controls"><div><label for="theme">Video background</label><select id="theme"><option value="sunset">Golden Dandelion Sky</option><option value="blue">Blue Dream</option><option value="rose">Soft Rose</option></select></div><div><label for="duration">MP4 duration</label><select id="duration"><option value="12" selected>12 seconds</option></select></div></div>
 <div class="actions"><button class="primary" onclick="showPreview()">🌼 Preview Message</button><button onclick="newNote()">✍️ New Note</button><button onclick="saveNote()">💾 Save Note</button><button onclick="copyNote()">📋 Copy Message</button><button onclick="downloadNote()">📄 Download TXT</button></div>
 </section>
 <section class="card" aria-label="Message preview">
@@ -103,7 +103,7 @@ async function exportMP4(){
  btn.disabled=true;
  try{
   if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream)throw new Error('This browser does not support video recording. Please use the latest Chrome.');
-  setStatus('Preparing your 12-second video…');
+  setStatus('Preparing your '+d.duration+'-second video…');
   const canvas=document.createElement('canvas');canvas.width=540;canvas.height=960;
   const ctx=canvas.getContext('2d',{alpha:false});
   if(!ctx)throw new Error('Canvas is not available in this browser.');
@@ -139,7 +139,7 @@ async function exportMP4(){
   if(!recorded.size)throw new Error('The video recorder returned an empty file.');
   if(recordedType.toLowerCase().includes('mp4')){
    downloadBlob(recorded,'dandelion-message.mp4');
-   setStatus('12-second MP4 created and downloaded. The animated author signature remains preview-only.');
+   setStatus(d.duration+'-second MP4 created and downloaded. The animated author signature remains preview-only.');
    return;
   }
   setStatus('Video captured. Loading the MP4 conversion engine…');
@@ -187,7 +187,7 @@ async function exportMP4(){
   setStatus('Preparing video for MP4 encoding…');
   await ffmpeg.writeFile('dandelion.webm',new Uint8Array(await recorded.arrayBuffer()));
   setStatus('Encoding MP4… 0%');
-  await ffmpeg.exec(['-i','dandelion.webm','-an','-c:v','mpeg4','-q:v','5','-threads','1','-r','24','-vf','scale=540:960','-pix_fmt','yuv420p','-movflags','+faststart','dandelion-message.mp4'],240000);
+  await ffmpeg.exec(['-i','dandelion.webm','-an','-c:v','mpeg4','-b:v','5M','-maxrate','5M','-bufsize','10M','-threads','1','-r','24','-vf','scale=540:960','-pix_fmt','yuv420p','-movflags','+faststart','dandelion-message.mp4'],240000);
   const data=await ffmpeg.readFile('dandelion-message.mp4');
   const mp4=new Blob([data],{type:'video/mp4'});
   if(!mp4.size)throw new Error('The MP4 encoder returned an empty video.');
