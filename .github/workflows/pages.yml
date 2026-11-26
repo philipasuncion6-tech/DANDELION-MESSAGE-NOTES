@@ -27,6 +27,12 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Prepare FFmpeg browser worker assets
+        run: |
+          mkdir -p ffmpeg
+          curl -fsSL https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js -o ffmpeg/worker.js
+          curl -fsSL https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/const.js -o ffmpeg/const.js
+          curl -fsSL https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/errors.js -o ffmpeg/errors.js
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
