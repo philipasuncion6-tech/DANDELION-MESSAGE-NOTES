@@ -54,7 +54,7 @@ footer{text-align:center;margin-top:25px;font-size:13px;opacity:.9}
 <h3>💌 Create Your Message</h3>
 <label for="title">Message title</label><input id="title" maxlength="70" placeholder="A little wish for you..." value="A Wish from the Heart">
 <label for="msg">Your message</label><textarea id="msg" maxlength="1200" placeholder="Write your heartfelt message here...">May your days be filled with hope, your heart with happiness, and your dreams with beautiful beginnings. Like dandelion seeds carried by the breeze, may your wishes find their way to something wonderful. 🌼</textarea>
-<div class="controls"><div><label for="theme">Video background</label><select id="theme"><option value="sunset">Golden Dandelion Sky</option><option value="blue">Blue Dream</option><option value="rose">Soft Rose</option></select></div><div><label for="duration">MP4 duration</label><select id="duration"><option value="12">12 seconds</option><option value="18" selected>18 seconds</option><option value="24">24 seconds</option></select></div></div>
+<div class="controls"><div><label for="theme">Video background</label><select id="theme"><option value="sunset">Golden Dandelion Sky</option><option value="blue">Blue Dream</option><option value="rose">Soft Rose</option></select></div><div><label for="duration">MP4 duration</label><select id="duration"><option value="12" selected>12 seconds</option><option value="18">18 seconds</option><option value="24">24 seconds</option></select></div></div>
 <div class="actions"><button class="primary" onclick="showPreview()">🌼 Preview Message</button><button onclick="newNote()">✍️ New Note</button><button onclick="saveNote()">💾 Save Note</button><button onclick="copyNote()">📋 Copy Message</button><button onclick="downloadNote()">📄 Download TXT</button></div>
 </section>
 <section class="card" aria-label="Message preview">
@@ -80,7 +80,7 @@ function downloadNote(){const d=messageData();if(!d.message){setStatus('Write a 
 function downloadBlob(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
 function readSaved(){try{return JSON.parse(localStorage.getItem('dandelionNotes')||'[]')}catch(e){return []}}
 function saveNote(){const d=messageData();if(!d.message){setStatus('Write a message before saving.');return}const all=readSaved();all.unshift({...d,id:Date.now()});localStorage.setItem('dandelionNotes',JSON.stringify(all.slice(0,30)));renderSaved();setStatus('Your note is saved on this device.')}
-function loadNote(id){const d=readSaved().find(x=>x.id===id);if(!d)return;$('title').value=d.title;$('msg').value=d.message;$('theme').value=d.theme||'sunset';$('duration').value=String(d.duration||18);showPreview();window.scrollTo({top:0,behavior:'smooth'});setStatus('Saved note loaded into the editor.')}
+function loadNote(id){const d=readSaved().find(x=>x.id===id);if(!d)return;$('title').value=d.title;$('msg').value=d.message;$('theme').value=d.theme||'sunset';$('duration').value=String(d.duration||12);showPreview();window.scrollTo({top:0,behavior:'smooth'});setStatus('Saved note loaded into the editor.')}
 function deleteNote(id){if(!confirm('Delete this saved note from this device?'))return;localStorage.setItem('dandelionNotes',JSON.stringify(readSaved().filter(x=>x.id!==id)));renderSaved()}
 function renderSaved(){const list=$('saved-list');const all=readSaved();list.innerHTML='';if(!all.length){list.innerHTML='<p class="small">Your saved notes will appear here on this device.</p>';return}all.forEach(d=>{const row=document.createElement('div');row.className='saved-item';const label=document.createElement('span');label.textContent=d.title+' — '+d.message.slice(0,75);const load=document.createElement('button');load.textContent='Open';load.onclick=()=>loadNote(d.id);const del=document.createElement('button');del.textContent='Delete';del.onclick=()=>deleteNote(d.id);const buttons=document.createElement('div');buttons.className='actions';buttons.append(load,del);row.append(label,buttons);list.append(row)})}
 renderSaved();
@@ -99,16 +99,22 @@ async function exportMP4(){
  if(!d.message){setStatus('Please write a message before exporting.');$('msg').focus();return}
  const btn=$('mp4-btn');
  let stream=null,ffmpeg=null,recorder=null;
+ const blobURLs=[];
  btn.disabled=true;
  try{
   if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream)throw new Error('This browser does not support video recording. Please use the latest Chrome.');
-  setStatus('Preparing your animated video…');
+  setStatus('Preparing your 12-second video…');
   const canvas=document.createElement('canvas');canvas.width=540;canvas.height=960;
   const ctx=canvas.getContext('2d',{alpha:false});
   if(!ctx)throw new Error('Canvas is not available in this browser.');
   stream=canvas.captureStream(24);
-  const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));
-  recorder=mime?new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:1100000}):new MediaRecorder(stream);
+  // Prefer native MP4 recording when the browser supports it. This avoids downloading the large FFmpeg engine.
+  const mp4Mime=['video/mp4;codecs=avc1.42E01E','video/mp4'].find(x=>MediaRecorder.isTypeSupported(x));
+  const webmMime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));
+  const mime=mp4Mime||webmMime||'';
+  const options={videoBitsPerSecond:5000000};
+  if(mime)options.mimeType=mime;
+  recorder=new MediaRecorder(stream,options);
   const chunks=[];
   recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
   const stopped=new Promise((resolve,reject)=>{recorder.onstop=resolve;recorder.onerror=()=>reject(new Error('Video recording failed.'))});
@@ -128,29 +134,65 @@ async function exportMP4(){
   await stopped;
   stream.getTracks().forEach(t=>t.stop());stream=null;
   if(!chunks.length)throw new Error('No video data was recorded.');
-  const webm=new Blob(chunks,{type:recorder.mimeType||mime||'video/webm'});
+  const recordedType=recorder.mimeType||mime||'video/webm';
+  const recorded=new Blob(chunks,{type:recordedType});
+  if(!recorded.size)throw new Error('The video recorder returned an empty file.');
+  if(recordedType.toLowerCase().includes('mp4')){
+   downloadBlob(recorded,'dandelion-message.mp4');
+   setStatus('12-second MP4 created and downloaded. The animated author signature remains preview-only.');
+   return;
+  }
   setStatus('Video captured. Loading the MP4 conversion engine…');
-  const [{FFmpeg},{toBlobURL}]=await Promise.all([
-   import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js'),
-   import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js')
-  ]);
+  const {FFmpeg}=await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
   ffmpeg=new FFmpeg();
   ffmpeg.on('progress',({progress})=>{
    if(Number.isFinite(progress)&&progress>=0)setStatus('Encoding MP4… '+Math.min(99,Math.round(progress*100))+'%');
   });
   const base='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
   const classWorkerURL=new URL('ffmpeg/worker.js',document.baseURI).href;
-  await ffmpeg.load({classWorkerURL,coreURL:await toBlobURL(base+'/ffmpeg-core.js','text/javascript'),wasmURL:await toBlobURL(base+'/ffmpeg-core.wasm','application/wasm')});
+  async function fetchBlobURL(url,type,label){
+   setStatus('Downloading '+label+'…');
+   const response=await fetch(url,{mode:'cors',cache:'force-cache'});
+   if(!response.ok)throw new Error(label+' download failed (HTTP '+response.status+').');
+   const total=Number(response.headers.get('content-length'))||0;
+   if(!response.body||!response.body.getReader){
+    const blob=await response.blob();
+    const objectURL=URL.createObjectURL(new Blob([blob],{type}));
+    blobURLs.push(objectURL);
+    return objectURL;
+   }
+   const reader=response.body.getReader(),parts=[];
+   let loaded=0,lastUpdate=0;
+   while(true){
+    const part=await reader.read();
+    if(part.done)break;
+    parts.push(part.value);loaded+=part.value.byteLength;
+    const now=Date.now();
+    if(label.includes('WASM')&&now-lastUpdate>350){
+     const mb=(loaded/1048576).toFixed(1);
+     const totalText=total?' / '+(total/1048576).toFixed(1)+' MB':' MB';
+     const pct=total?' ('+Math.round(loaded/total*100)+'%)':'';
+     setStatus('Downloading MP4 engine: '+mb+totalText+pct);
+     lastUpdate=now;
+    }
+   }
+   const objectURL=URL.createObjectURL(new Blob(parts,{type}));
+   blobURLs.push(objectURL);
+   return objectURL;
+  }
+  const coreURL=await fetchBlobURL(base+'/ffmpeg-core.js','text/javascript','MP4 encoder');
+  const wasmURL=await fetchBlobURL(base+'/ffmpeg-core.wasm','application/wasm','MP4 encoder WASM');
+  setStatus('Starting MP4 conversion engine…');
+  await ffmpeg.load({classWorkerURL,coreURL,wasmURL});
   setStatus('Preparing video for MP4 encoding…');
-  await ffmpeg.writeFile('dandelion.webm',new Uint8Array(await webm.arrayBuffer()));
+  await ffmpeg.writeFile('dandelion.webm',new Uint8Array(await recorded.arrayBuffer()));
   setStatus('Encoding MP4… 0%');
-  // Use the same lightweight MPEG-4 / single-thread encoding strategy proven in the Autumn Tree project.
   await ffmpeg.exec(['-i','dandelion.webm','-an','-c:v','mpeg4','-q:v','5','-threads','1','-r','24','-vf','scale=540:960','-pix_fmt','yuv420p','-movflags','+faststart','dandelion-message.mp4'],240000);
   const data=await ffmpeg.readFile('dandelion-message.mp4');
   const mp4=new Blob([data],{type:'video/mp4'});
   if(!mp4.size)throw new Error('The MP4 encoder returned an empty video.');
   downloadBlob(mp4,'dandelion-message.mp4');
-  setStatus('MP4 created and downloaded. The animated author signature remains preview-only.');
+  setStatus('12-second MP4 created and downloaded. The animated author signature remains preview-only.');
  }catch(e){
   console.error('Dandelion MP4 export error:',e);
   const detail=e?.message||e?.reason?.message||e?.type||String(e);
@@ -158,6 +200,7 @@ async function exportMP4(){
  }finally{
   if(stream)stream.getTracks().forEach(t=>t.stop());
   if(ffmpeg){try{await ffmpeg.terminate()}catch(e){}}
+  blobURLs.forEach(url=>URL.revokeObjectURL(url));
   btn.disabled=false;
  }
 }
