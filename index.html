@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dandelion Message Notes</title>
-<meta name="description" content="Let Your Wishes Fly, Let Your Messages Bloom.">
+<meta name="description" content="Create heartfelt dandelion-inspired notes, wishes, and messages.">
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Georgia,serif;min-height:100vh;overflow-x:hidden;color:#fff;background:linear-gradient(135deg,#1767b1,#8fd3ff 48%,#f6b54b);position:relative}
 body:before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 20% 20%,rgba(255,255,255,.3),transparent 28%),radial-gradient(circle at 80% 25%,rgba(255,255,255,.18),transparent 30%);pointer-events:none}
-.seed{position:fixed;font-size:28px;opacity:.7;animation:float 8s linear infinite;pointer-events:none}.s1{left:8%;top:15%}.s2{left:70%;top:12%;animation-delay:2s}.s3{left:48%;top:45%;animation-delay:4s}.s4{left:85%;top:62%;animation-delay:1s}
+.seed{position:fixed;font-size:28px;opacity:.7;animation:float 8s linear infinite;pointer-events:none}.s1{left:8%;top:15%}.s2{left:70%;top:12%;animation-delay:2s}.s3{left:48%;top:45%;animation-delay:4s}.s4{left:85%;top:62%;animation-delay:1s}.s5{left:28%;top:70%;animation-delay:3s}.s6{left:58%;top:25%;animation-delay:5s}
 @keyframes float{0%{transform:translate3d(0,30px,0) rotate(0)}50%{transform:translate3d(35px,-25px,0) rotate(160deg)}100%{transform:translate3d(-15px,-90px,0) rotate(320deg);opacity:0}}
-.wrap{max-width:960px;margin:auto;padding:34px 18px 60px;position:relative}.hero{text-align:center}.hero h1{font-size:clamp(38px,9vw,78px);margin:5px 0 0;color:#ffd75a;text-shadow:0 3px 0 #8a4e08,0 0 25px rgba(255,255,255,.35);font-style:italic}.hero h2{margin:0;font-size:clamp(22px,5vw,42px);letter-spacing:2px;text-shadow:0 2px 5px #173b5d}.tag{display:inline-block;margin:15px auto 26px;padding:11px 24px;border-radius:30px;background:rgba(255,224,135,.92);color:#4c3212;font-weight:bold;font-style:italic;box-shadow:0 5px 20px rgba(0,0,0,.25)}
+.wrap{max-width:960px;margin:auto;padding:34px 18px 60px;position:relative}.hero{text-align:center}.hero h1{font-size:clamp(38px,9vw,78px);margin:5px 0 0;color:#ffd75a;text-shadow:0 3px 0 #8a4e08,0 0 25px rgba(255,255,255,.35);font-style:italic}.hero h2{margin:0;font-size:clamp(22px,5vw,42px);letter-spacing:2px;text-shadow:0 2px 5px #173b5d}.hint{font-size:14px;opacity:.9;margin:-10px 0 22px}.tag{display:inline-block;margin:15px auto 26px;padding:11px 24px;border-radius:30px;background:rgba(255,224,135,.92);color:#4c3212;font-weight:bold;font-style:italic;box-shadow:0 5px 20px rgba(0,0,0,.25)}
 .card{max-width:720px;margin:0 auto;padding:25px;border-radius:24px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(12px);box-shadow:0 20px 60px rgba(0,0,0,.22)}
 .paper{background:#fff4d8;color:#30251b;border-radius:18px;padding:28px;min-height:250px;box-shadow:inset 0 0 30px rgba(133,84,20,.1),0 12px 30px rgba(0,0,0,.25)}
 textarea{width:100%;min-height:145px;border:0;outline:0;resize:vertical;background:transparent;color:#30251b;font:italic 23px/1.45 Georgia,serif}.paper button{background:#f3b32d;border:0;border-radius:22px;padding:11px 20px;font-weight:bold;color:#4a2d08;cursor:pointer}
@@ -21,11 +21,11 @@ footer{text-align:center;margin-top:28px;font-size:13px;opacity:.85}
 </style>
 </head>
 <body>
-<div class="seed s1">❋</div><div class="seed s2">✧</div><div class="seed s3">❋</div><div class="seed s4">✧</div>
+<div class="seed s1">❋</div><div class="seed s2">✧</div><div class="seed s3">❋</div><div class="seed s4">✧</div><div class="seed s5">✦</div><div class="seed s6">❋</div>
 <main class="wrap">
 <section class="hero">
 <h1>Dandelion</h1><h2>MESSAGE NOTES</h2>
-<div class="tag">Let Your Wishes Fly, Let Your Messages Bloom. 🌼</div>
+<div class="tag">Let Your Wishes Fly, Let Your Messages Bloom. 🌼</div><div class="hint">Write a note, preview it, and let your wishes bloom.</div>
 </section>
 <section class="card">
 <div class="paper">
@@ -35,7 +35,7 @@ footer{text-align:center;margin-top:28px;font-size:13px;opacity:.85}
 <div class="actions">
 <button onclick="newNote()">🌼 New Note</button>
 <button onclick="showPreview()">💌 Preview</button>
-<button onclick="copyNote()">📋 Copy Message</button>
+<button onclick="copyNote()">📋 Copy Message</button><button onclick="downloadNote()">💾 Save Note</button>
 </div>
 <div id="signature" class="signature">
 <div class="author">Author :</div>
@@ -49,6 +49,7 @@ footer{text-align:center;margin-top:28px;font-size:13px;opacity:.85}
 function showPreview(){document.getElementById('signature').classList.remove('show');void document.getElementById('signature').offsetWidth;document.getElementById('signature').classList.add('show')}
 function newNote(){document.getElementById('msg').value='';document.getElementById('signature').classList.remove('show');document.getElementById('msg').focus()}
 async function copyNote(){try{await navigator.clipboard.writeText(document.getElementById('msg').value);alert('Message copied!')}catch(e){alert('Copy is not available in this browser.')}}
+function downloadNote(){const text=document.getElementById('msg').value.trim();if(!text){alert('Write a message first.');return}const blob=new Blob([text],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dandelion-message-note.txt';a.click();URL.revokeObjectURL(a.href)}
 </script>
 </body>
 </html>
