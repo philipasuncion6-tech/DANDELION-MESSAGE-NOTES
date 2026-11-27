@@ -134,17 +134,23 @@ async function exportMP4(){
   recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:5000000});
   const chunks=[];let capturedBytes=0;
   recorder.ondataavailable=e=>{if(e.data&&e.data.size){chunks.push(e.data);capturedBytes+=e.data.size;setStatus('Recording video… '+capturedBytes.toLocaleString()+' bytes ('+(capturedBytes/1048576).toFixed(2)+' MB)')}};
+  const started=new Promise(resolve=>{recorder.onstart=resolve});
   const stopped=new Promise((resolve,reject)=>{recorder.onstop=resolve;recorder.onerror=()=>reject(new Error('Video recording failed.'))});
-  const startTime=performance.now();
   recorder.start(500);
+  // Start the clock only after MediaRecorder confirms that capture has begun.
+  // Keep a small capture tail so the 24-fps source always contains enough
+  // frames for the exact 12-second MP4 trim below.
+  await started;
+  const startTime=performance.now();
+  const captureDuration=d.duration+0.15;
   await new Promise((resolve,reject)=>{
    let finished=false;
    const finish=()=>{if(finished)return;finished=true;try{if(recorder.state==='recording')recorder.stop();resolve()}catch(e){reject(e)}};
    const frame=now=>{
     if(finished)return;
     const elapsed=(now-startTime)/1000;
-    try{paintFrame(ctx,canvas.width,canvas.height,d,elapsed,d.duration)}catch(e){finished=true;reject(e);return}
-    if(elapsed<d.duration)requestAnimationFrame(frame);else finish();
+    try{paintFrame(ctx,canvas.width,canvas.height,d,Math.min(elapsed,d.duration),d.duration)}catch(e){finished=true;reject(e);return}
+    if(elapsed<captureDuration)requestAnimationFrame(frame);else finish();
    };
    requestAnimationFrame(frame);
   });
