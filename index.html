@@ -234,7 +234,8 @@ async function exportMP4(){
   setStatus('Preparing video for MP4 encoding…');
   await ffmpeg.writeFile('dandelion.webm',new Uint8Array(await recorded.arrayBuffer()));
   setStatus('Encoding MP4… 0%');
-  const totalFrames=Math.round(d.duration*24);
+  // Add one terminal frame so mobile players that truncate fractional duration still display the full 12 seconds.
+  const totalFrames=Math.round(d.duration*24)+1;
   await ffmpeg.exec(['-fflags','+genpts','-i','dandelion.webm','-an','-vf','fps=24,scale=540:960,setpts=N/(24*TB)','-frames:v',String(totalFrames),'-r','24','-fps_mode','cfr','-c:v','mpeg4','-b:v','5M','-maxrate','5M','-bufsize','10M','-threads','1','-pix_fmt','yuv420p','-video_track_timescale','24000','-movflags','+faststart','dandelion-message.mp4'],240000);
   const data=await ffmpeg.readFile('dandelion-message.mp4');
   const mp4=new Blob([data],{type:'video/mp4'});
