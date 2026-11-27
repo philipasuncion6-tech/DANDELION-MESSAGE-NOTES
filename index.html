@@ -34,11 +34,15 @@ button:hover:not(:disabled){transform:translateY(-1px)}
 .paper h4{margin:0 0 14px;font-size:25px;color:#946018;font-style:italic}
 .preview-message{font-size:clamp(19px,4vw,25px);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;min-height:65px}
 .preview-art{font-size:26px;letter-spacing:8px;margin:12px 0}
-.signature{margin-top:18px;min-height:85px;opacity:0;transition:opacity .4s}.signature.show{opacity:1}
-.author{font-size:16px}.created{font-size:15px;font-style:italic}
-.name{font-family:cursive;font-size:34px;color:#c18b20;text-shadow:0 1px 0 #fff;display:inline-block;white-space:nowrap;overflow:hidden;width:0;border-right:2px solid #c18b20}
-.signature.show .name{animation:write 3.2s steps(24,end) forwards,blink .7s step-end infinite}
-@keyframes write{to{width:24ch}}@keyframes blink{50%{border-color:transparent}}
+.signature{margin-top:18px;min-height:92px;opacity:0;transform:translateY(18px);transition:opacity .45s,transform .9s cubic-bezier(.2,.75,.25,1);color:#c18b20;text-shadow:0 1px 0 #fff8d8}
+.signature.show{opacity:1;transform:translateY(0);animation:signatureSlide 1s cubic-bezier(.2,.75,.25,1) both}
+.author{font-size:16px;font-weight:bold;color:#b78318;letter-spacing:1.5px}
+.created{font-size:15px;font-style:italic;color:#c18b20;animation:labelSlide 1s .35s both}
+.name{font-family:"Brush Script MT","Segoe Script","URW Chancery L",cursive;font-size:36px;font-style:italic;font-weight:bold;color:#d4a52d;text-shadow:0 1px 0 #fff,0 2px 5px #8c5a0b55;display:inline-block;white-space:nowrap;overflow:hidden;width:0;border-right:2px solid #d4a52d}
+.signature.show .name{animation:write 3.2s steps(24,end) .8s forwards,blink .7s step-end 1.2s 5}
+@keyframes signatureSlide{from{transform:translateX(-24px) translateY(18px);opacity:0}to{transform:translateX(0) translateY(0);opacity:1}}
+@keyframes labelSlide{from{opacity:0;transform:translateX(22px)}to{opacity:1;transform:translateX(0)}}
+@keyframes write{to{width:16ch}}@keyframes blink{50%{border-color:transparent}}
 .status{min-height:22px;text-align:center;font-size:13px;margin-top:12px;color:#fff8d8}
 .saved-list{display:grid;gap:8px;margin-top:12px}.saved-item{display:flex;gap:10px;align-items:center;justify-content:space-between;background:#ffffff20;border:1px solid #ffffff45;border-radius:12px;padding:10px}.saved-item span{min-width:0;overflow-wrap:anywhere;font-size:14px}.saved-item button{padding:8px 12px}
 .small{font-size:12px;opacity:.85;text-align:center;line-height:1.5}
@@ -73,7 +77,7 @@ footer{text-align:center;margin-top:25px;font-size:13px;opacity:.9}
 const $=id=>document.getElementById(id);
 function messageData(){return {title:$('title').value.trim()||'A Wish from the Heart',message:$('msg').value.trim(),theme:$('theme').value,duration:Number($('duration').value),updated:new Date().toISOString()}}
 function setStatus(text){$('status').textContent=text}
-function showPreview(){const d=messageData();if(!d.message){setStatus('Please write a message first.');$('msg').focus();return} $('preview-title').textContent=d.title;$('preview-message').textContent=d.message;$('signature').classList.remove('show');void $('signature').offsetWidth;$('signature').classList.add('show');setStatus('Your message preview is ready. The animated signature appears in preview only.')}
+function showPreview(){const d=messageData();if(!d.message){setStatus('Please write a message first.');$('msg').focus();return} $('preview-title').textContent=d.title;$('preview-message').textContent=d.message;$('signature').classList.remove('show');void $('signature').offsetWidth;$('signature').classList.add('show');setStatus('Your message preview is ready, including the animated gold author signature.')}
 function newNote(){if(($('msg').value.trim()||$('title').value.trim())&&!confirm('Start a new note? Save this message first if you want to keep it.'))return;$('title').value='';$('msg').value='';$('signature').classList.remove('show');$('preview-title').textContent='Your Message';$('preview-message').textContent='Your message preview will appear here.';$('title').focus();setStatus('Ready for a new message.')}
 async function copyNote(){const d=messageData();if(!d.message){setStatus('Write a message first.');return}try{await navigator.clipboard.writeText(d.title+'\n\n'+d.message);setStatus('Message copied to clipboard.')}catch(e){$('msg').select();setStatus('Select and copy your message manually.');}}
 function downloadNote(){const d=messageData();if(!d.message){setStatus('Write a message first.');return}const blob=new Blob([d.title+'\n\n'+d.message],{type:'text/plain;charset=utf-8'});downloadBlob(blob,'dandelion-message-note.txt');setStatus('TXT note downloaded.')}
@@ -91,8 +95,18 @@ for(let i=0;i<46;i++){const x=((i*173+Math.sin(t*.7+i)*45)%w+w)%w;const y=((i*97
 ctx.textAlign='center';ctx.fillStyle='#ffe18a';ctx.shadowColor='#573b16';ctx.shadowBlur=15;ctx.font='italic bold 54px Georgia';ctx.fillText('Dandelion',w/2,h*.18);ctx.shadowBlur=0;ctx.fillStyle='#fff';ctx.font='bold 27px Georgia';ctx.fillText('MESSAGE NOTES',w/2,h*.23);
 ctx.fillStyle='rgba(255,248,226,.94)';roundRect(ctx,w*.09,h*.32,w*.82,h*.48,28);ctx.fill();
 ctx.textAlign='center';ctx.fillStyle='#946018';ctx.font='italic 34px Georgia';drawWrapped(ctx,d.title,w/2,h*.39,w*.72,42,2);
-ctx.fillStyle='#30251b';ctx.font='28px Georgia';const reveal=Math.min(d.message.length,Math.floor(d.message.length*Math.min(1,Math.max(0,(t-1.5)/(total*.55)))));drawWrapped(ctx,d.message.slice(0,reveal),w/2,h*.49,w*.7,43,7);
-ctx.font='36px Georgia';ctx.fillStyle='#fff5d5';ctx.fillText('🌼    ✧    🦋    ✧    🌼',w/2,h*.88);ctx.fillStyle='#fff';ctx.font='italic 20px Georgia';ctx.fillText('Let Your Wishes Fly, Let Your Messages Bloom.',w/2,h*.94)}
+ctx.fillStyle='#30251b';ctx.font='28px Georgia';const reveal=Math.min(d.message.length,Math.floor(d.message.length*Math.min(1,Math.max(0,(t-1.5)/(total*.55))));drawWrapped(ctx,d.message.slice(0,reveal),w/2,h*.49,w*.7,43,7);
+// Gold author signature: same three-line composition as the preview, rendered into every MP4 frame.
+const slide=Math.min(1,Math.max(0,(t-.65)/.85));
+const authorY=h*.825+(1-slide)*18;
+ctx.save();ctx.textAlign='center';ctx.globalAlpha=slide;ctx.shadowColor='rgba(92,55,8,.45)';ctx.shadowBlur=5;
+const gold=ctx.createLinearGradient(w*.25,0,w*.75,0);gold.addColorStop(0,'#9b6815');gold.addColorStop(.5,'#ffe08a');gold.addColorStop(1,'#b47a16');ctx.fillStyle=gold;
+ctx.font='bold 16px Georgia';ctx.fillText('Author :',w/2,authorY);
+ctx.font='italic 15px Georgia';ctx.fillText('Created by',w/2,authorY+25);
+const name='Philip Asuncion';const writeProgress=Math.min(1,Math.max(0,(t-2.0)/3.2));const nameWidth=ctx.measureText(name).width;
+ctx.save();ctx.beginPath();ctx.rect(w/2-nameWidth/2,authorY+29,nameWidth*writeProgress,47);ctx.clip();
+ctx.font='italic bold 38px "Brush Script MT", "Segoe Script", cursive';ctx.fillText(name,w/2,authorY+66);ctx.restore();ctx.restore();
+ctx.font='34px Georgia';ctx.fillStyle='#fff5d5';ctx.fillText('🌼    ✧    🦋    ✧    🌼',w/2,h*.94);ctx.fillStyle='#fff';ctx.font='italic 18px Georgia';ctx.fillText('Let Your Wishes Fly, Let Your Messages Bloom.',w/2,h*.98)}
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
 async function exportMP4(){
  const d=messageData();
@@ -108,15 +122,12 @@ async function exportMP4(){
   const ctx=canvas.getContext('2d',{alpha:false});
   if(!ctx)throw new Error('Canvas is not available in this browser.');
   stream=canvas.captureStream(24);
-  // Prefer native MP4 recording when the browser supports it. This avoids downloading the large FFmpeg engine.
-  const mp4Mime=['video/mp4;codecs=avc1.42E01E','video/mp4'].find(x=>MediaRecorder.isTypeSupported(x));
-  const webmMime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));
-  const mime=mp4Mime||webmMime||'';
-  const options={videoBitsPerSecond:5000000};
-  if(mime)options.mimeType=mime;
-  recorder=new MediaRecorder(stream,options);
-  const chunks=[];
-  recorder.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  // Always capture WebM first, then mux/encode a correctly timed MP4 with FFmpeg.
+  const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));
+  if(!mime)throw new Error('This Chrome version cannot record WebM video. Please update Chrome.');
+  recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:5000000});
+  const chunks=[];let capturedBytes=0;
+  recorder.ondataavailable=e=>{if(e.data&&e.data.size){chunks.push(e.data);capturedBytes+=e.data.size;setStatus('Recording video… '+capturedBytes.toLocaleString()+' bytes ('+(capturedBytes/1048576).toFixed(2)+' MB)')}};
   const stopped=new Promise((resolve,reject)=>{recorder.onstop=resolve;recorder.onerror=()=>reject(new Error('Video recording failed.'))});
   const startTime=performance.now();
   recorder.start(500);
@@ -137,12 +148,8 @@ async function exportMP4(){
   const recordedType=recorder.mimeType||mime||'video/webm';
   const recorded=new Blob(chunks,{type:recordedType});
   if(!recorded.size)throw new Error('The video recorder returned an empty file.');
-  if(recordedType.toLowerCase().includes('mp4')){
-   downloadBlob(recorded,'dandelion-message.mp4');
-   setStatus(d.duration+'-second MP4 created and downloaded. The animated author signature remains preview-only.');
-   return;
-  }
-  setStatus('Video captured. Loading the MP4 conversion engine…');
+  if(recordedType.toLowerCase().includes('mp4'))throw new Error('Unexpected native MP4 recording path; please retry in Chrome.');
+  setStatus('Captured '+recorded.size.toLocaleString()+' bytes ('+(recorded.size/1048576).toFixed(2)+' MB). Loading MP4 conversion engine…');
   const {FFmpeg}=await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
   ffmpeg=new FFmpeg();
   ffmpeg.on('progress',({progress})=>{
@@ -187,12 +194,12 @@ async function exportMP4(){
   setStatus('Preparing video for MP4 encoding…');
   await ffmpeg.writeFile('dandelion.webm',new Uint8Array(await recorded.arrayBuffer()));
   setStatus('Encoding MP4… 0%');
-  await ffmpeg.exec(['-i','dandelion.webm','-an','-c:v','mpeg4','-b:v','5M','-maxrate','5M','-bufsize','10M','-threads','1','-r','24','-vf','scale=540:960','-pix_fmt','yuv420p','-movflags','+faststart','dandelion-message.mp4'],240000);
+  await ffmpeg.exec(['-fflags','+genpts','-i','dandelion.webm','-t',String(d.duration),'-an','-vf','fps=24,scale=540:960','-frames:v',String(d.duration*24),'-c:v','mpeg4','-b:v','5M','-maxrate','5M','-bufsize','10M','-threads','1','-r','24','-pix_fmt','yuv420p','-movflags','+faststart','dandelion-message.mp4'],240000);
   const data=await ffmpeg.readFile('dandelion-message.mp4');
   const mp4=new Blob([data],{type:'video/mp4'});
   if(!mp4.size)throw new Error('The MP4 encoder returned an empty video.');
   downloadBlob(mp4,'dandelion-message.mp4');
-  setStatus('12-second MP4 created and downloaded. The animated author signature remains preview-only.');
+  setStatus(d.duration+'-second MP4 created • '+mp4.size.toLocaleString()+' bytes ('+(mp4.size/1048576).toFixed(2)+' MB) • Gold animated author signature included.');
  }catch(e){
   console.error('Dandelion MP4 export error:',e);
   const detail=e?.message||e?.reason?.message||e?.type||String(e);
