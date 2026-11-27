@@ -234,7 +234,8 @@ async function exportMP4(){
   setStatus('Preparing video for MP4 encoding…');
   await ffmpeg.writeFile('dandelion.webm',new Uint8Array(await recorded.arrayBuffer()));
   setStatus('Encoding MP4… 0%');
-  await ffmpeg.exec(['-fflags','+genpts','-i','dandelion.webm','-t',String(d.duration),'-an','-vf','fps=24,scale=540:960','-frames:v',String(d.duration*24),'-c:v','mpeg4','-b:v','5M','-maxrate','5M','-bufsize','10M','-threads','1','-r','24','-pix_fmt','yuv420p','-movflags','+faststart','dandelion-message.mp4'],240000);
+  const totalFrames=Math.round(d.duration*24);
+  await ffmpeg.exec(['-fflags','+genpts','-i','dandelion.webm','-an','-vf','fps=24,scale=540:960,setpts=N/(24*TB)','-frames:v',String(totalFrames),'-r','24','-fps_mode','cfr','-c:v','mpeg4','-b:v','5M','-maxrate','5M','-bufsize','10M','-threads','1','-pix_fmt','yuv420p','-video_track_timescale','24000','-movflags','+faststart','dandelion-message.mp4'],240000);
   const data=await ffmpeg.readFile('dandelion-message.mp4');
   const mp4=new Blob([data],{type:'video/mp4'});
   if(!mp4.size)throw new Error('The MP4 encoder returned an empty video.');
