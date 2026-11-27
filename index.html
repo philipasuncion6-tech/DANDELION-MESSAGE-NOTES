@@ -187,10 +187,12 @@ async function exportMP4(){
    blobURLs.push(objectURL);
    return objectURL;
   }
+  const workerURL='https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js';
+  const classWorkerURL=await fetchBlobURL(workerURL,'text/javascript','FFmpeg worker');
   const coreURL=await fetchBlobURL(base+'/ffmpeg-core.js','text/javascript','MP4 encoder');
   const wasmURL=await fetchBlobURL(base+'/ffmpeg-core.wasm','application/wasm','MP4 encoder WASM');
   setStatus('Starting MP4 conversion engine…');
-  await ffmpeg.load({coreURL,wasmURL});
+  await ffmpeg.load({classWorkerURL,coreURL,wasmURL});
   setStatus('Preparing video for MP4 encoding…');
   await ffmpeg.writeFile('dandelion.webm',new Uint8Array(await recorded.arrayBuffer()));
   setStatus('Encoding MP4… 0%');
