@@ -94,12 +94,8 @@ function messageData(){return {title:$('title').value.trim()||'A Wish from the H
 function setStatus(text){$('status').textContent=text}
 function showPreview(){const d=messageData();if(!d.message){setStatus('Please write a message first.');$('msg').focus();return} $('preview-title').textContent=d.title;$('preview-message').textContent=d.message;$('signature').classList.remove('show');void $('signature').offsetWidth;$('signature').classList.add('show');setStatus('Your message preview is ready, including the animated gold author signature.')}
 function newNote(){if(($('msg').value.trim()||$('title').value.trim())&&!confirm('Start a new note? Save this message first if you want to keep it.'))return;$('title').value='';$('msg').value='';$('signature').classList.remove('show');$('preview-title').textContent='Your Message';$('preview-message').textContent='Your message preview will appear here.';$('title').focus();setStatus('Ready for a new message.')}
-async function copyNote(){const d=messageData();if(!d.message){setStatus('Write a message first.');return}try{await navigator.clipboard.writeText(d.title+'
-
-'+d.message);setStatus('Message copied to clipboard.')}catch(e){$('msg').select();setStatus('Select and copy your message manually.');}}
-function downloadNote(){const d=messageData();if(!d.message){setStatus('Write a message first.');return}const blob=new Blob([d.title+'
-
-'+d.message],{type:'text/plain;charset=utf-8'});downloadBlob(blob,'dandelion-message-note.txt');setStatus('TXT note downloaded.')}
+async function copyNote(){const d=messageData();if(!d.message){setStatus('Write a message first.');return}try{await navigator.clipboard.writeText(d.title+'\n\n'+d.message);setStatus('Message copied to clipboard.')}catch(e){$('msg').select();setStatus('Select and copy your message manually.');}}
+function downloadNote(){const d=messageData();if(!d.message){setStatus('Write a message first.');return}const blob=new Blob([d.title+'\n\n'+d.message],{type:'text/plain;charset=utf-8'});downloadBlob(blob,'dandelion-message-note.txt');setStatus('TXT note downloaded.')}
 function downloadBlob(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
 function readSaved(){try{return JSON.parse(localStorage.getItem('dandelionNotes')||'[]')}catch(e){return []}}
 function saveNote(){const d=messageData();if(!d.message){setStatus('Write a message before saving.');return}const all=readSaved();all.unshift({...d,id:Date.now()});localStorage.setItem('dandelionNotes',JSON.stringify(all.slice(0,30)));renderSaved();setStatus('Your note is saved on this device.')}
