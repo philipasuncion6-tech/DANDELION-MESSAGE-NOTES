@@ -141,7 +141,15 @@ async function exportMP4(){
   const canvas=document.createElement('canvas');canvas.width=540;canvas.height=960;
   const ctx=canvas.getContext('2d',{alpha:false});
   if(!ctx)throw new Error('Canvas is not available in this browser.');
-  stream=canvas.captureStream(24);
+  // Prefer explicit frame requests so Chrome captures each freshly painted canvas frame.
+  // Fall back to the browser's automatic 24 FPS capture where requestFrame is unavailable.
+  let captureTrack=null,manualFrameCapture=false;
+  try{
+   stream=canvas.captureStream(0);
+   captureTrack=stream.getVideoTracks()[0]||null;
+   manualFrameCapture=!!captureTrack&&typeof captureTrack.requestFrame==='function';
+   if(!manualFrameCapture){stream.getTracks().forEach(t=>t.stop());stream=canvas.captureStream(24);captureTrack=null;}
+  }catch(e){stream=canvas.captureStream(24);captureTrack=null;manualFrameCapture=false;}
   // Always capture WebM first, then mux/encode a correctly timed MP4 with FFmpeg.
   const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));
   if(!mime)throw new Error('This Chrome version cannot record WebM video. Please update Chrome.');
@@ -149,21 +157,30 @@ async function exportMP4(){
   const chunks=[];let capturedBytes=0;
   recorder.ondataavailable=e=>{if(e.data&&e.data.size){chunks.push(e.data);capturedBytes+=e.data.size;setStatus('Recording video… '+capturedBytes.toLocaleString()+' bytes ('+(capturedBytes/1048576).toFixed(2)+' MB)')}};
   const stopped=new Promise((resolve,reject)=>{recorder.onstop=resolve;recorder.onerror=()=>reject(new Error('Video recording failed.'))});
-  // Start the frame clock immediately before recording. Do not wait for the
-  // MediaRecorder "start" event: some mobile Chrome/WebView builds can fail
-  // to deliver that event reliably and leave export stuck on Preparing.
-  const startTime=performance.now();
+  // Wait for the recorder to enter its recording state before starting the
+  // animation clock. A short state-based fallback avoids hanging on builds
+  // that fail to dispatch the "start" event.
+  const started=new Promise((resolve,reject)=>{
+   const startTimer=setTimeout(()=>{if(recorder.state==='recording')resolve();else reject(new Error('Video recorder did not start. Please retry in Chrome.'))},3000);
+   recorder.addEventListener('start',()=>{clearTimeout(startTimer);resolve()},{once:true});
+  });
   recorder.start(500);
+  await started;
+  const startTime=performance.now();
   // A short capture tail gives the encoder enough source frames for the exact
   // 12-second MP4 trim, while the rendered message/signature stops at 12 sec.
   const captureDuration=d.duration+0.15;
   await new Promise((resolve,reject)=>{
-   let finished=false;
+   let finished=false,renderedFrames=0;
    const finish=()=>{if(finished)return;finished=true;try{if(recorder.state==='recording')recorder.stop();resolve()}catch(e){reject(e)}};
    const frame=now=>{
     if(finished)return;
     const elapsed=(now-startTime)/1000;
-    try{paintFrame(ctx,canvas.width,canvas.height,d,Math.min(elapsed,d.duration),d.duration)}catch(e){finished=true;reject(e);return}
+    try{
+     paintFrame(ctx,canvas.width,canvas.height,d,Math.min(elapsed,d.duration),d.duration);
+     renderedFrames++;
+     if(manualFrameCapture)captureTrack.requestFrame();
+    }catch(e){finished=true;reject(e);return}
     if(elapsed<captureDuration)requestAnimationFrame(frame);else finish();
    };
    requestAnimationFrame(frame);
@@ -175,7 +192,7 @@ async function exportMP4(){
   const recorded=new Blob(chunks,{type:recordedType});
   if(!recorded.size)throw new Error('The video recorder returned an empty file.');
   if(recordedType.toLowerCase().includes('mp4'))throw new Error('Unexpected native MP4 recording path; please retry in Chrome.');
-  setStatus('Captured '+recorded.size.toLocaleString()+' bytes ('+(recorded.size/1048576).toFixed(2)+' MB). Loading MP4 conversion engine…');
+  setStatus('Captured '+recorded.size.toLocaleString()+' bytes ('+(recorded.size/1048576).toFixed(2)+' MB) • '+renderedFrames+' canvas frames requested. Loading MP4 conversion engine…');
   const {FFmpeg}=await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
   ffmpeg=new FFmpeg();
   ffmpeg.on('progress',({progress})=>{
