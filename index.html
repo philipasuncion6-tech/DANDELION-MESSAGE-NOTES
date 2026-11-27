@@ -170,8 +170,9 @@ async function exportMP4(){
   // A short capture tail gives the encoder enough source frames for the exact
   // 12-second MP4 trim, while the rendered message/signature stops at 12 sec.
   const captureDuration=d.duration+0.15;
+  let renderedFrames=0;
   await new Promise((resolve,reject)=>{
-   let finished=false,renderedFrames=0;
+   let finished=false;
    const finish=()=>{if(finished)return;finished=true;try{if(recorder.state==='recording')recorder.stop();resolve()}catch(e){reject(e)}};
    const frame=now=>{
     if(finished)return;
