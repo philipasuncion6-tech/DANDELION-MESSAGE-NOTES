@@ -161,7 +161,7 @@ async function exportMP4(){
   ffmpeg.on('progress',({progress})=>{
    if(Number.isFinite(progress)&&progress>=0)setStatus('Encoding MP4… '+Math.min(99,Math.round(progress*100))+'%');
   });
-  const base='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+  const base='https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
   async function fetchBlobURL(url,type,label){
    setStatus('Downloading '+label+'…');
    const response=await fetch(url,{mode:'cors',cache:'force-cache'});
@@ -199,8 +199,10 @@ async function exportMP4(){
   const workerBootstrap='import '+JSON.stringify(workerURL)+';';
   const classWorkerURL=URL.createObjectURL(new Blob([workerBootstrap],{type:'text/javascript'}));
   blobURLs.push(classWorkerURL);
-  const coreURL=await fetchBlobURL(base+'/ffmpeg-core.js','text/javascript','MP4 encoder');
-  const wasmURL=await fetchBlobURL(base+'/ffmpeg-core.wasm','application/wasm','MP4 encoder WASM');
+  // Load the matching ESM core directly. The ESM core is required by the
+  // module worker fallback and must retain its CDN-relative chunk imports.
+  const coreURL=base+'/ffmpeg-core.js';
+  const wasmURL=base+'/ffmpeg-core.wasm';
   setStatus('Starting MP4 conversion engine…');
   let loadTimer;
   try{
