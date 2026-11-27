@@ -134,14 +134,14 @@ async function exportMP4(){
   recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:5000000});
   const chunks=[];let capturedBytes=0;
   recorder.ondataavailable=e=>{if(e.data&&e.data.size){chunks.push(e.data);capturedBytes+=e.data.size;setStatus('Recording video… '+capturedBytes.toLocaleString()+' bytes ('+(capturedBytes/1048576).toFixed(2)+' MB)')}};
-  const started=new Promise(resolve=>{recorder.onstart=resolve});
   const stopped=new Promise((resolve,reject)=>{recorder.onstop=resolve;recorder.onerror=()=>reject(new Error('Video recording failed.'))});
-  recorder.start(500);
-  // Start the clock only after MediaRecorder confirms that capture has begun.
-  // Keep a small capture tail so the 24-fps source always contains enough
-  // frames for the exact 12-second MP4 trim below.
-  await started;
+  // Start the frame clock immediately before recording. Do not wait for the
+  // MediaRecorder "start" event: some mobile Chrome/WebView builds can fail
+  // to deliver that event reliably and leave export stuck on Preparing.
   const startTime=performance.now();
+  recorder.start(500);
+  // A short capture tail gives the encoder enough source frames for the exact
+  // 12-second MP4 trim, while the rendered message/signature stops at 12 sec.
   const captureDuration=d.duration+0.15;
   await new Promise((resolve,reject)=>{
    let finished=false;
